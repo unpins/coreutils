@@ -8,18 +8,20 @@
 
   inputs.unpins-lib.url = "github:unpins/nix-lib";
 
-  # Native-only by design. mingw cross of GNU coreutils fails in gnulib
-  # (waitpid/fork POSIX assumptions in lib/savewd.c and friends — same family
-  # of breakage as bash/git). uutils-coreutils (Rust) would cross cleanly but
-  # mixing flavors per-platform would be surprising. See
-  # feedback_unpins_coreutils_windows_blocked.md in memory.
+  # Linux/macOS: native pkgsStatic via mkStandaloneFlake. Windows: routed
+  # through Cosmopolitan (`windowsCosmo = true`) because mingw cross of GNU
+  # coreutils fails in gnulib (waitpid/fork POSIX assumptions in lib/savewd.c
+  # and friends — same family of breakage as bash/git). Per-target cosmo
+  # fixes live in `unpins/nix-lib/cosmo/coreutils.{nix,patch}`.
   #
-  # Ships the multicall `coreutils` binary built with --enable-single-binary=symlinks
-  # (nixpkgs default). Per-command symlinks are stripped in nix-lib's fixes registry;
-  # invoke as `coreutils --coreutils-prog=ls /tmp` or via user-created symlinks.
+  # Ships the multicall `coreutils` binary built with `--enable-single-binary=symlinks`
+  # on every platform (`coreutils.exe` on Windows). Per-applet symlinks are
+  # stripped by `lib.withAliases` after embedding the applet names as an
+  # UNPIN_META block so `unpin install` can materialize argv[0]-dispatch shims.
   outputs = { self, unpins-lib }:
     unpins-lib.lib.mkStandaloneFlake {
       inherit self;
       name = "coreutils";
+      windowsCosmo = true;
     };
 }

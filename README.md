@@ -5,14 +5,15 @@ Standalone build of [GNU coreutils](https://www.gnu.org/software/coreutils/), sh
 [![CI](https://github.com/unpins/coreutils/actions/workflows/coreutils.yml/badge.svg)](https://github.com/unpins/coreutils/actions)
 ![Linux](https://img.shields.io/badge/Linux-✓-success?logo=linux&logoColor=white)
 ![macOS](https://img.shields.io/badge/macOS-✓-success?logo=apple&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-✓-success?logo=windows&logoColor=white)
 
 Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
 
-Linux/macOS only — Windows is architecturally blocked (gnulib's `waitpid`/fork POSIX assumptions don't compile on mingw).
+Linux/macOS use `pkgsStatic`. Windows is built via [Cosmopolitan](https://justine.lol/cosmopolitan/) (cosmocc cross-toolchain inside Nix) because mingw cross of GNU coreutils fails in gnulib (`waitpid`/fork POSIX assumptions in `lib/savewd.c` and friends). All three platforms ship the same multicall binary built from the same upstream source.
 
 ## Usage
 
-The package ships one executable, `coreutils`. Dispatch to a built-in program via the `--coreutils-prog=` flag:
+The package ships one executable, `coreutils` (`coreutils.exe` on Windows). `unpin install` materializes per-applet shims (`ls`, `cat`, `cp`, …) next to the multicall using argv[0] dispatch. To run a command directly without installing, use the `--coreutils-prog=` flag:
 
 ```bash
 coreutils --coreutils-prog=ls -la
