@@ -23,5 +23,11 @@
       inherit self;
       name = "coreutils";
       windowsCosmo = true;
+      # Probe whether cosmo Windows argv reaches main() intact — links
+      # rejects every single-dash and double-dash option on cosmo Win.
+      # If coreutils --version works here, the bug is specific to links;
+      # if it also fails, it's a cosmocc runtime / apelink issue.
+      smoke = [ "--version" ];
+      smokePattern = "GNU coreutils";
     };
 }
