@@ -14,10 +14,13 @@
   # and friends — same family of breakage as bash/git). Per-target cosmo
   # fixes live in `unpins/nix-lib/cosmo/coreutils.{nix,patch}`.
   #
-  # Ships the multicall `coreutils` binary built with `--enable-single-binary=symlinks`
-  # on every platform (`coreutils.exe` on Windows). Per-applet symlinks are
-  # stripped by `lib.withAliases` after embedding the applet names as an
-  # UNPIN_META block so `unpin install` can materialize argv[0]-dispatch shims.
+  # Upstream builds the multicall with `--enable-single-binary=symlinks`:
+  # one real `coreutils` in $out/bin plus a symlink per applet (ls, cat,
+  # cp, …). We ship only the multicall; the UNPIN_META block embedded by
+  # `lib.withAliases` tells unpin's installer to create the alias links
+  # itself at install time (argv[0]-dispatch). Helper collects the applet
+  # names from the upstream symlinks before wiping them — single source
+  # of truth, no hand-maintained list.
   outputs = { self, unpins-lib }:
     unpins-lib.lib.mkStandaloneFlake {
       inherit self;
@@ -29,5 +32,12 @@
       # if it also fails, it's a cosmocc runtime / apelink issue.
       smoke = [ "--version" ];
       smokePattern = "GNU coreutils";
+      build = pkgs:
+        unpins-lib.lib.withAliases pkgs
+          {
+            primary = "coreutils";
+            aliasesFromSymlinksIn = "bin";
+          }
+          pkgs.pkgsStatic.coreutils;
     };
 }
