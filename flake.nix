@@ -9,10 +9,11 @@
   inputs.unpins-lib.url = "github:unpins/nix-lib";
 
   # Linux/macOS: native pkgsStatic via mkStandaloneFlake. Windows: routed
-  # through Cosmopolitan (`windowsCosmo = true`) because mingw cross of GNU
-  # coreutils fails in gnulib (waitpid/fork POSIX assumptions in lib/savewd.c
-  # and friends — same family of breakage as bash/git). Per-target cosmo
-  # fixes live in `unpins/nix-lib/cosmo/coreutils.{nix,patch}`.
+  # through Cosmopolitan (`windowsBuild = import ./cosmo.nix …`) because
+  # mingw cross of GNU coreutils fails in gnulib (waitpid/fork POSIX
+  # assumptions in lib/savewd.c and friends — same family of breakage as
+  # bash/git). Per-binary cosmo recipe + patch sit in `./cosmo.nix` +
+  # `./coreutils-cosmo.patch`.
   #
   # Upstream builds the multicall with `--enable-single-binary=symlinks`:
   # one real `coreutils` in $out/bin plus a symlink per applet (ls, cat,
@@ -25,7 +26,7 @@
     unpins-lib.lib.mkStandaloneFlake {
       inherit self;
       name = "coreutils";
-      windowsCosmo = true;
+      windowsBuild = import ./cosmo.nix { inherit unpins-lib; };
       # Probe whether cosmo Windows argv reaches main() intact — links
       # rejects every single-dash and double-dash option on cosmo Win.
       # If coreutils --version works here, the bug is specific to links;
