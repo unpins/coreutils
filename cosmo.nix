@@ -36,7 +36,6 @@
 { unpins-lib }:
 pkgs:
 let
-  cs = import "${unpins-lib.outPath}/cosmocc.nix" { pkgs = pkgs.buildPackages; };
   cosmoPkgs = unpins-lib.lib.cosmoStaticCross pkgs;
 
   coreutils94Src = pkgs.fetchurl {
@@ -85,24 +84,19 @@ let
       ];
     };
 
-    # ELF → PE32+ for Windows. apelink -V 4 keeps only the win32 half
-    # of the polyglot header (cosmocc's single-arch cc still emits an
-    # APE-eligible ELF; apelink rewrites it in-place for the target).
-    # Runs in postFixup so it fires AFTER withAliases's auto-harvest
-    # of the per-applet symlinks (removing the original `coreutils`
-    # target would otherwise break them mid-pass).
-    postFixup = (oa.postFixup or "") + ''
-      ${cs.cosmocc}/bin/apelink \
-        -V ${toString cs.platformBits.windows} \
-        -o $out/bin/coreutils.exe \
-        $out/bin/coreutils
-      rm -f $out/bin/coreutils
-    '';
   });
+
+  # `cosmoApelink` (ELF→PE32+, rename `coreutils` → `coreutils.exe`) wraps
+  # `patched` BEFORE `withAliases` so postFixup chains as:
+  #   <upstream> → <apelink to .exe> → <embed UNPIN_META into coreutils.exe>
+  # withAliases's postInstall (symlink harvest + delete) runs before postFixup
+  # either way, so `aliasesFromSymlinksIn` still sees the multicall symlinks
+  # while they exist; the `.exe` rename happens after the harvest.
+  apelinked = unpins-lib.lib.cosmoApelink pkgs { binName = "coreutils"; } patched;
 in
 unpins-lib.lib.withAliases cosmoPkgs
   {
     primary = "coreutils.exe";
     aliasesFromSymlinksIn = "bin";
   }
-  patched
+  apelinked
