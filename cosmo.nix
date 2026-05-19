@@ -86,17 +86,18 @@ let
 
   });
 
-  # `cosmoApelink` (ELF→PE32+, rename `coreutils` → `coreutils.exe`) wraps
-  # `patched` BEFORE `withAliases` so postFixup chains as:
-  #   <upstream> → <apelink to .exe> → <embed UNPIN_META into coreutils.exe>
-  # withAliases's postInstall (symlink harvest + delete) runs before postFixup
-  # either way, so `aliasesFromSymlinksIn` still sees the multicall symlinks
-  # while they exist; the `.exe` rename happens after the harvest.
-  apelinked = unpins-lib.lib.cosmoApelink pkgs { binName = "coreutils"; } patched;
+  # ELF → PE32+ rename to `coreutils.exe` happens automatically via the
+  # cosmo cross stdenv's apelink setup hook (preFixupHook). It also
+  # rewires the multicall symlinks (`ls -> coreutils` etc.) into
+  # `<applet>.exe -> coreutils.exe` form during Phase 2 of the hook —
+  # so `aliasesFromSymlinksIn = "bin"` still sees a non-empty symlink
+  # set at withAliases harvest time (which runs in postInstall, before
+  # the hook). withAliases's UNPIN_META embed runs in postFixup, after
+  # the hook, and operates on the final `coreutils.exe`.
 in
 unpins-lib.lib.withAliases cosmoPkgs
   {
     primary = "coreutils.exe";
     aliasesFromSymlinksIn = "bin";
   }
-  apelinked
+  patched
