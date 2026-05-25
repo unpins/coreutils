@@ -1,7 +1,7 @@
-diff -r --unified coreutils-9.4a/lib/canonicalize.c coreutils-9.4/lib/canonicalize.c
---- coreutils-9.4a/lib/canonicalize.c	2023-05-19 17:22:04.000000000 +0000
-+++ coreutils-9.4/lib/canonicalize.c	2023-12-04 23:58:08.089872118 +0000
-@@ -216,7 +216,6 @@
+diff -urN a/lib/canonicalize.c b/lib/canonicalize.c
+--- a/lib/canonicalize.c	2025-05-01 10:04:05.000000000 -0300
++++ b/lib/canonicalize.c	2026-05-25 15:00:33.382024493 -0300
+@@ -223,7 +223,6 @@
              case ERANGE:
                if (scratch_buffer_grow (&bufs->rname))
                  break;
@@ -9,9 +9,9 @@ diff -r --unified coreutils-9.4a/lib/canonicalize.c coreutils-9.4/lib/canonicali
              case ENOMEM:
                xalloc_die ();
  
-diff -r --unified coreutils-9.4a/lib/fadvise.h coreutils-9.4/lib/fadvise.h
---- coreutils-9.4a/lib/fadvise.h	2023-03-13 13:28:47.000000000 +0000
-+++ coreutils-9.4/lib/fadvise.h	2023-12-04 23:58:08.085871678 +0000
+diff -urN a/lib/fadvise.h b/lib/fadvise.h
+--- a/lib/fadvise.h	2025-01-07 09:36:53.000000000 -0300
++++ b/lib/fadvise.h	2026-05-25 15:00:33.410023405 -0300
 @@ -41,14 +41,13 @@
     value is needed, but it must be guarded by appropriate #ifdefs.  */
  
@@ -24,27 +24,41 @@ diff -r --unified coreutils-9.4a/lib/fadvise.h coreutils-9.4/lib/fadvise.h
 -  FADVISE_WILLNEED =   POSIX_FADV_WILLNEED,
 -  FADVISE_RANDOM =     POSIX_FADV_RANDOM
 -} fadvice_t;
-+#define   FADVISE_NORMAL     POSIX_FADV_NORMAL
-+#define   FADVISE_SEQUENTIAL POSIX_FADV_SEQUENTIAL
-+#define   FADVISE_NOREUSE    POSIX_FADV_NOREUSE
-+#define   FADVISE_DONTNEED   POSIX_FADV_DONTNEED
-+#define   FADVISE_WILLNEED   POSIX_FADV_WILLNEED
-+#define   FADVISE_RANDOM     POSIX_FADV_RANDOM
 +typedef int fadvice_t;
++#define FADVISE_NORMAL POSIX_FADV_NORMAL
++#define FADVISE_SEQUENTIAL POSIX_FADV_SEQUENTIAL
++#define FADVISE_NOREUSE POSIX_FADV_NOREUSE
++#define FADVISE_DONTNEED POSIX_FADV_DONTNEED
++#define FADVISE_WILLNEED POSIX_FADV_WILLNEED
++#define FADVISE_RANDOM POSIX_FADV_RANDOM
  #else
  typedef enum {
    FADVISE_NORMAL,
-diff -r --unified coreutils-9.4a/src/dd.c coreutils-9.4/src/dd.c
---- coreutils-9.4a/src/dd.c	2023-08-29 11:39:27.000000000 +0000
-+++ coreutils-9.4/src/dd.c	2023-12-04 23:58:08.085871678 +0000
-@@ -289,57 +289,56 @@
+diff -urN a/lib/getlocalename_l-unsafe.c b/lib/getlocalename_l-unsafe.c
+--- a/lib/getlocalename_l-unsafe.c	2025-08-19 12:57:38.000000000 -0300
++++ b/lib/getlocalename_l-unsafe.c	2026-05-25 15:22:51.946441904 -0300
+@@ -668,6 +668,10 @@
+       };
+       const char *name = ((struct __locale_t *) locale)->mb_cur_max == 4 ? "C.UTF-8" : "C";
+       return (struct string_with_storage) { name, STORAGE_INDEFINITE };
++#elif defined __COSMOCC__
++      /* Cosmopolitan: locale support is minimal; report C. */
++      (void) locale;
++      return (struct string_with_storage) { "C", STORAGE_INDEFINITE };
+ #else
+  #error "Please port gnulib getlocalename_l-unsafe.c to your platform! Report this to bug-gnulib."
+ #endif
+diff -urN a/src/dd.c b/src/dd.c
+--- a/src/dd.c	2025-09-20 11:16:35.000000000 -0300
++++ b/src/dd.c	2026-05-25 15:00:33.414023250 -0300
+@@ -284,58 +284,59 @@
  };
  
  #define FFS_MASK(x) ((x) ^ ((x) & ((x) - 1)))
 -enum
 -  {
-     /* Compute a value that's bitwise disjoint from the union
-        of all O_ values.  */
+-    /* Compute a value that's bitwise disjoint from the union
+-       of all O_ values.  */
 -    v = ~(0
 -          | O_APPEND
 -          | O_BINARY
@@ -52,6 +66,7 @@ diff -r --unified coreutils-9.4a/src/dd.c coreutils-9.4/src/dd.c
 -          | O_DIRECT
 -          | O_DIRECTORY
 -          | O_DSYNC
+-          | O_EXCL
 -          | O_NOATIME
 -          | O_NOCTTY
 -          | O_NOFOLLOW
@@ -60,6 +75,8 @@ diff -r --unified coreutils-9.4a/src/dd.c coreutils-9.4/src/dd.c
 -          | O_SYNC
 -          | O_TEXT
 -          ),
++/* Flag-bit table — converted to #defines (cosmocc rejects non-const enum inits). */
++/* Compute a value that's bitwise disjoint from the union of all O_ values. */
 +#define v (~(0\
 +          | O_APPEND\
 +          | O_BINARY\
@@ -67,6 +84,7 @@ diff -r --unified coreutils-9.4a/src/dd.c coreutils-9.4/src/dd.c
 +          | O_DIRECT\
 +          | O_DIRECTORY\
 +          | O_DSYNC\
++          | O_EXCL\
 +          | O_NOATIME\
 +          | O_NOCTTY\
 +          | O_NOFOLLOW\
@@ -101,26 +119,41 @@ diff -r --unified coreutils-9.4a/src/dd.c coreutils-9.4/src/dd.c
 -  };
 +#define     O_SEEK_BYTES (FFS_MASK(v5))
  
--/* Ensure that we got something.  */
-+/*
-+// Ensure that we got something.
++#if 0
+ /* Ensure that we got something.  */
  static_assert (O_FULLBLOCK != 0);
  static_assert (O_NOCACHE != 0);
  static_assert (O_COUNT_BYTES != 0);
  static_assert (O_SKIP_BYTES != 0);
  static_assert (O_SEEK_BYTES != 0);
++#endif
  
--#define MULTIPLE_BITS_SET(i) (((i) & ((i) - 1)) != 0)
-+*/ #define MULTIPLE_BITS_SET(i) (((i) & ((i) - 1)) != 0)
+ #define MULTIPLE_BITS_SET(i) (((i) & ((i) - 1)) != 0)
  
--/* Ensure that this is a single-bit value.  */
-+/* Ensure that this is a single-bit value. */ /*
++#if 0
+ /* Ensure that this is a single-bit value.  */
  static_assert ( ! MULTIPLE_BITS_SET (O_FULLBLOCK));
  static_assert ( ! MULTIPLE_BITS_SET (O_NOCACHE));
  static_assert ( ! MULTIPLE_BITS_SET (O_COUNT_BYTES));
  static_assert ( ! MULTIPLE_BITS_SET (O_SKIP_BYTES));
  static_assert ( ! MULTIPLE_BITS_SET (O_SEEK_BYTES));
-+*/
++#endif
  
  /* Flags, for iflag="..." and oflag="...".  */
  static struct symbol_value const flags[] =
+diff -urN a/src/factor.c b/src/factor.c
+--- a/src/factor.c	2025-09-14 09:28:11.000000000 -0300
++++ b/src/factor.c	2026-05-25 15:16:18.093638732 -0300
+@@ -1665,11 +1665,7 @@
+ #ifndef _POSIX_PIPE_BUF
+ # define _POSIX_PIPE_BUF 512
+ #endif
+-#ifdef PIPE_BUF
+-enum { FACTOR_PIPE_BUF = PIPE_BUF };
+-#else
+-enum { FACTOR_PIPE_BUF = _POSIX_PIPE_BUF };
+-#endif
++#define FACTOR_PIPE_BUF 4096  /* cosmo: PIPE_BUF not constexpr */
+ 
+ /* Structure and routines for buffering and outputting full lines, to
+    support parallel operation efficiently.

@@ -29,6 +29,15 @@ ls -la
 
 Built-in programs include: `ls`, `cat`, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, `ln`, `chmod`, `chown`, `dd`, `df`, `du`, `head`, `tail`, `sort`, `uniq`, `wc`, `cut`, `paste`, `tr`, `sed`-free text tools (`expand`, `fold`, `fmt`, …), checksums (`md5sum`/`sha*sum`/`cksum`/`b2sum`), `base32`/`base64`, `date`, `env`, `printf`, `stat`, `realpath`, `readlink`, `seq`, `sleep`, `timeout`, `nproc`, `nohup`, `tee`, `yes`, and more (~100 total — `coreutils --help` for the full list).
 
+## Disabled options
+
+- ACL preservation — Windows only (native on Linux + macOS)
+- xattr support — Windows only (native on Linux + macOS)
+- SELinux (`-Z`, `runcon` contexts)
+- libgmp (large-int `factor` / `expr` / `basenc` use mini-gmp fallback)
+- OpenSSL acceleration for `md5sum` / `sha*sum`
+- Locale catalogs and man pages
+
 ## Installation
 
 Install with [unpin](https://github.com/unpins/unpin):

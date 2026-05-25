@@ -39,6 +39,26 @@
             primary = "coreutils";
             aliasesFromSymlinksIn = "bin";
           }
-          pkgs.pkgsStatic.coreutils;
+          # Feature matrix:
+          #   acl / attr: on for Linux (libacl / libattr from pkgsStatic);
+          #     darwin keeps the override at false because the nixpkgs `acl`
+          #     and `attr` packages are Linux-only — but coreutils's configure
+          #     auto-detects native ACL / xattr from libSystem (`<sys/acl.h>`,
+          #     `<sys/xattr.h>`) without needing them. Off on cosmo (no API).
+          #   selinuxSupport: Linux-kernel-only and would drag libselinux.
+          #   gmpSupport:     arb-precision factor/expr/basenc fall back to
+          #                   gnulib's mini-gmp; also dodges a flaky
+          #                   `gmp-with-cxx-static tests/mpq` under musl
+          #                   pkgsStatic.
+          #   withOpenssl:    md5sum / sha*sum keep gnulib implementations —
+          #                   fewer transitive deps, smaller closure.
+          (pkgs.pkgsStatic.coreutils.override {
+            aclSupport = pkgs.stdenv.hostPlatform.isLinux;
+            attrSupport = pkgs.stdenv.hostPlatform.isLinux;
+            selinuxSupport = false;
+            gmpSupport = false;
+            withOpenssl = false;
+            singleBinary = "symlinks";
+          });
     };
 }
