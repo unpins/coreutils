@@ -54,6 +54,16 @@
           #   withOpenssl:    md5sum / sha*sum keep gnulib implementations —
           #                   fewer transitive deps, smaller closure.
           ((sp.coreutils.override {
+            # minimal=false flips pname to coreutils-full and, crucially, keeps
+            # `$out/share/man` (the default `minimal=true` runs `rm -r $out/share`
+            # in postInstall). The man pages are still generated — the static
+            # build GENs them and the isCross postInstall installs man/*.1 — so
+            # this is what lets `unpin man coreutils <applet>` work via the
+            # embedded `unpin/man/*` ZIP. withOpenssl stays false (overridden
+            # below) so we don't pull openssl that minimal=false would otherwise
+            # default-on. Extra build-time share/locale is dropped from the final
+            # bin-only output by strippedOrJoined.
+            minimal = false;
             aclSupport = pkgs.stdenv.hostPlatform.isLinux;
             attrSupport = pkgs.stdenv.hostPlatform.isLinux;
             selinuxSupport = false;
