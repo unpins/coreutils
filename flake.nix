@@ -34,6 +34,7 @@
       smoke = [ "--version" ];
       smokePattern = "GNU coreutils";
       build = pkgs:
+        let sp = pkgs.pkgsStatic; in
         unpins-lib.lib.withAliases pkgs
           {
             primary = "coreutils";
@@ -52,13 +53,31 @@
           #                   pkgsStatic.
           #   withOpenssl:    md5sum / sha*sum keep gnulib implementations —
           #                   fewer transitive deps, smaller closure.
-          (pkgs.pkgsStatic.coreutils.override {
+          ((sp.coreutils.override {
             aclSupport = pkgs.stdenv.hostPlatform.isLinux;
             attrSupport = pkgs.stdenv.hostPlatform.isLinux;
             selinuxSupport = false;
             gmpSupport = false;
             withOpenssl = false;
             singleBinary = "symlinks";
-          });
+          }).overrideAttrs (_: {
+            # Run coreutils' own functional suite (tests/) on native Linux:
+            # 434 pass / 0 fail under pkgsStatic-musl (verified locally). The
+            # top-level `make check` ALSO recurses into gnulib-tests/, whose
+            # threading/locale/TLS units (test-lock, test-tls, test-rwlock1,
+            # test-*-mt, …) assume glibc semantics and fail under musl — those
+            # exercise gnulib infrastructure, not coreutils — so the check is
+            # restricted to tests/. Cross builds skip via canExecute;
+            # darwin-native is left off (not locally verifiable — revisit via
+            # the Mac builder). See docs/releasing.md "Native test suite".
+            doCheck = sp.stdenv.hostPlatform.isLinux
+              && sp.stdenv.buildPlatform.canExecute sp.stdenv.hostPlatform;
+            checkTarget = "check";
+            checkPhase = ''
+              runHook preCheck
+              make -C tests check VERBOSE=yes
+              runHook postCheck
+            '';
+          }));
     };
 }

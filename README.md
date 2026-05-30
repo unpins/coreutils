@@ -36,7 +36,9 @@ Built-in programs include: `ls`, `cat`, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, `ln`
 - SELinux (`-Z`, `runcon` contexts)
 - libgmp (large-int `factor` / `expr` / `basenc` use mini-gmp fallback)
 - OpenSSL acceleration for `md5sum` / `sha*sum`
-- Locale catalogs and man pages
+- Locale catalogs and man pages (no embedded man: coreutils generates only per-applet pages, with no combined `coreutils.1` for the multicall to embed)
+
+The functional test suite (`tests/`) *does* run on native Linux — 434 pass / 0 fail under static-musl. Only the `gnulib-tests/` portability units (threading/locale/TLS) are skipped: they assume glibc semantics and fail under musl, and exercise gnulib infrastructure rather than coreutils itself.
 
 ## Installation
 
@@ -69,4 +71,4 @@ The first invocation will offer to add the [unpins.cachix.org](https://unpins.ca
 
 ## Manual download
 
-The [Releases](https://github.com/unpins/coreutils/releases) page has standalone binaries and a `.tar.zst` data archive (man pages and completions) for manual download.
+The [Releases](https://github.com/unpins/coreutils/releases) page has standalone binaries for manual download.
