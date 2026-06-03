@@ -13,21 +13,27 @@ Linux/macOS use `pkgsStatic`. Windows is built via [Cosmopolitan](https://justin
 
 ## Usage
 
-The package ships one executable, `coreutils` (`coreutils.exe` on Windows). `unpin install` materializes per-applet shims (`ls`, `cat`, `cp`, …) next to the multicall using argv[0] dispatch. To run a command directly without installing, use the `--coreutils-prog=` flag:
+coreutils is one binary with ~100 programs (`ls`, `cat`, `cp`, `mv`, `rm`, …). GNU's single binary picks the program from `argv[0]` (the name it's invoked as) or the `--coreutils-prog=` flag — not from the first argument — so run a program with [unpin](https://github.com/unpins/unpin) via that flag:
 
 ```bash
-coreutils --coreutils-prog=ls -la
-coreutils --coreutils-prog=sha256sum file
+unpin coreutils --coreutils-prog=ls -la /
+unpin coreutils --coreutils-prog=sha256sum file
 ```
 
-Or create symlinks named after the commands you want to use as bare names:
+Run it with `--help` to list every built-in program:
 
 ```bash
-ln -s "$(command -v coreutils)" ~/bin/ls
-ls -la
+unpin coreutils --help
 ```
 
-Built-in programs include: `ls`, `cat`, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, `ln`, `chmod`, `chown`, `dd`, `df`, `du`, `head`, `tail`, `sort`, `uniq`, `wc`, `cut`, `paste`, `tr`, `sed`-free text tools (`expand`, `fold`, `fmt`, …), checksums (`md5sum`/`sha*sum`/`cksum`/`b2sum`), `base32`/`base64`, `date`, `env`, `printf`, `stat`, `realpath`, `readlink`, `seq`, `sleep`, `timeout`, `nproc`, `nohup`, `tee`, `yes`, and more (~100 total — `coreutils --help` for the full list).
+To install onto your PATH (each program becomes its own command — `ls`, `cat`, `cp`, …, dispatched by `argv[0]`):
+
+```bash
+unpin install coreutils
+ls -la /
+```
+
+Built-in programs (~100 total): `ls`, `cat`, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, `ln`, `chmod`, `chown`, `dd`, `df`, `du`, `head`, `tail`, `sort`, `uniq`, `wc`, `cut`, `paste`, `tr`, text tools (`expand`, `fold`, `fmt`, …), checksums (`md5sum`/`sha*sum`/`cksum`/`b2sum`), `base32`/`base64`, `date`, `env`, `printf`, `stat`, `realpath`, `readlink`, `seq`, `sleep`, `timeout`, `nproc`, `nohup`, `tee`, `yes`, and more.
 
 ## Disabled options
 
@@ -39,20 +45,6 @@ Built-in programs include: `ls`, `cat`, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, `ln`
 - Locale catalogs and man pages (no embedded man: coreutils generates only per-applet pages, with no combined `coreutils.1` for the multicall to embed)
 
 The functional test suite (`tests/`) *does* run on native Linux — 434 pass / 0 fail under static-musl. Only the `gnulib-tests/` portability units (threading/locale/TLS) are skipped: they assume glibc semantics and fail under musl, and exercise gnulib infrastructure rather than coreutils itself.
-
-## Installation
-
-Install with [unpin](https://github.com/unpins/unpin):
-
-```bash
-unpin coreutils
-```
-
-Or run without installing:
-
-```bash
-unpin run coreutils
-```
 
 ## Build locally
 
