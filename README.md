@@ -1,6 +1,6 @@
 # coreutils
 
-Standalone build of [GNU coreutils](https://www.gnu.org/software/coreutils/) — `ls`, `cat`, `cp`, `mv`, `rm` and ~100 other core file, text and shell tools, packaged as a single multicall binary.
+Standalone build of [GNU coreutils](https://www.gnu.org/software/coreutils/) — `ls`, `cat`, `cp`, `mv`, `rm` and ~100 other core file, text and shell programs, packaged as a single binary.
 
 [![CI](https://github.com/unpins/coreutils/actions/workflows/coreutils.yml/badge.svg)](https://github.com/unpins/coreutils/actions)
 ![Linux](https://img.shields.io/badge/Linux-✓-success?logo=linux&logoColor=white)
