@@ -1,6 +1,6 @@
 # coreutils
 
-Standalone build of [GNU coreutils](https://www.gnu.org/software/coreutils/), shipped as a single multicall binary (busybox-style) via `--enable-single-binary=symlinks`.
+Standalone build of [GNU coreutils](https://www.gnu.org/software/coreutils/) — `ls`, `cat`, `cp`, `mv`, `rm` and ~100 other core file, text and shell tools, packaged as a single multicall binary.
 
 [![CI](https://github.com/unpins/coreutils/actions/workflows/coreutils.yml/badge.svg)](https://github.com/unpins/coreutils/actions)
 ![Linux](https://img.shields.io/badge/Linux-✓-success?logo=linux&logoColor=white)
@@ -9,42 +9,23 @@ Standalone build of [GNU coreutils](https://www.gnu.org/software/coreutils/), sh
 
 Part of the [unpins](https://unpins.org) project — native single-binary builds with no third-party runtime dependencies.
 
-Linux/macOS use `pkgsStatic`. Windows is built via [Cosmopolitan](https://justine.lol/cosmopolitan/) (cosmocc cross-toolchain inside Nix) because mingw cross of GNU coreutils fails in gnulib (`waitpid`/fork POSIX assumptions in `lib/savewd.c` and friends). All three platforms ship the same multicall binary built from the same upstream source.
-
 ## Usage
 
-coreutils is one binary with ~100 programs (`ls`, `cat`, `cp`, `mv`, `rm`, …). GNU's single binary picks the program from `argv[0]` (the name it's invoked as) or the `--coreutils-prog=` flag — not from the first argument — so run a program with [unpin](https://github.com/unpins/unpin) via that flag:
-
-```bash
-unpin coreutils --coreutils-prog=ls -la /
-unpin coreutils --coreutils-prog=sha256sum file
-```
-
-Run it with `--help` to list every built-in program:
-
-```bash
-unpin coreutils --help
-```
-
-To install onto your PATH (each program becomes its own command — `ls`, `cat`, `cp`, …, dispatched by `argv[0]`):
+coreutils is one binary holding ~100 programs. It picks which one to run from the name it's invoked as, so the natural way to use it is to install the programs onto your PATH:
 
 ```bash
 unpin install coreutils
 ls -la /
+sha256sum file
 ```
 
-Built-in programs (~100 total): `ls`, `cat`, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, `ln`, `chmod`, `chown`, `dd`, `df`, `du`, `head`, `tail`, `sort`, `uniq`, `wc`, `cut`, `paste`, `tr`, text tools (`expand`, `fold`, `fmt`, …), checksums (`md5sum`/`sha*sum`/`cksum`/`b2sum`), `base32`/`base64`, `date`, `env`, `printf`, `stat`, `realpath`, `readlink`, `seq`, `sleep`, `timeout`, `nproc`, `nohup`, `tee`, `yes`, and more.
+To run a program without installing, name it with `--coreutils-prog=`:
 
-## Disabled options
+```bash
+unpin coreutils --coreutils-prog=ls -la /
+```
 
-- ACL preservation — Windows only (native on Linux + macOS)
-- xattr support — Windows only (native on Linux + macOS)
-- SELinux (`-Z`, `runcon` contexts)
-- libgmp (large-int `factor` / `expr` / `basenc` use mini-gmp fallback)
-- OpenSSL acceleration for `md5sum` / `sha*sum`
-- Locale catalogs and man pages (no embedded man: coreutils generates only per-applet pages, with no combined `coreutils.1` for the multicall to embed)
-
-The functional test suite (`tests/`) *does* run on native Linux — 434 pass / 0 fail under static-musl. Only the `gnulib-tests/` portability units (threading/locale/TLS) are skipped: they assume glibc semantics and fail under musl, and exercise gnulib infrastructure rather than coreutils itself.
+`unpin coreutils --help` lists every built-in program.
 
 ## Build locally
 
@@ -64,3 +45,9 @@ The first invocation will offer to add the [unpins.cachix.org](https://unpins.ca
 ## Manual download
 
 The [Releases](https://github.com/unpins/coreutils/releases) page has standalone binaries for manual download.
+
+## Build notes
+
+- **Windows** is built with [Cosmopolitan](https://justine.lol/cosmopolitan/); Linux and macOS use static builds. All three ship the same multicall binary from the same source.
+- **Disabled:** SELinux contexts (`-Z`, `runcon`), libgmp (mini-gmp fallback for `factor`/`expr`), and OpenSSL checksum acceleration. ACL and xattr preservation are on for Linux/macOS, off on Windows. No embedded man pages — coreutils generates only per-program pages, with no combined page for the multicall to embed.
+- **Tests:** the functional suite passes on native static-musl Linux (434 / 0). The `gnulib-tests` portability units (threading/locale/TLS) are skipped — they assume glibc semantics, not musl.
