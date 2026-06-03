@@ -27,11 +27,15 @@
       inherit self;
       name = "coreutils";
       windowsBuild = import ./cosmo.nix { inherit unpins-lib; };
-      # Probe whether cosmo Windows argv reaches main() intact — links
-      # rejects every single-dash and double-dash option on cosmo Win.
-      # If coreutils --version works here, the bug is specific to links;
-      # if it also fails, it's a cosmocc runtime / apelink issue.
-      smoke = [ "--version" ];
+      # coreutils dispatches its applet from argv[0]. The Windows smoke
+      # decompresses the release artifact to `smoke.exe` and runs it, so
+      # argv[0] is "smoke" — `smoke.exe --version` errors with
+      # `unknown program 'smoke'`. (Linux keeps the binary named `coreutils`,
+      # so it didn't surface there.) `--coreutils-prog=env` picks the applet
+      # explicitly, independent of argv[0]; `env --version` still prints the
+      # "GNU coreutils" version banner. Works whether invoked as coreutils or
+      # smoke.exe (both verified locally).
+      smoke = [ "--coreutils-prog=env" "--version" ];
       smokePattern = "GNU coreutils";
       build = pkgs:
         let sp = pkgs.pkgsStatic; in
