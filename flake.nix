@@ -29,13 +29,15 @@
       windowsBuild = import ./cosmo.nix { inherit unpins-lib; };
       # coreutils dispatches its applet from argv[0]. The Windows smoke
       # decompresses the release artifact to `smoke.exe` and runs it, so
-      # argv[0] is "smoke" — `smoke.exe --version` errors with
+      # argv[0] is "smoke" — a bare `smoke.exe --version` errors with
       # `unknown program 'smoke'`. (Linux keeps the binary named `coreutils`,
-      # so it didn't surface there.) `--coreutils-prog=env` picks the applet
-      # explicitly, independent of argv[0]; `env --version` still prints the
+      # so it didn't surface there.) `--unpin-program=env` picks the applet
+      # explicitly, independent of argv[0] (it is the unified catalog selector,
+      # a synonym of coreutils' own `--coreutils-prog=` added in
+      # ./coreutils-unpin-program.patch); `env --version` still prints the
       # "GNU coreutils" version banner. Works whether invoked as coreutils or
       # smoke.exe (both verified locally).
-      smoke = [ "--coreutils-prog=env" "--version" ];
+      smoke = [ "--unpin-program=env" "--version" ];
       smokePattern = "GNU coreutils";
       build = pkgs:
         let sp = pkgs.pkgsStatic; in
@@ -74,7 +76,14 @@
             gmpSupport = false;
             withOpenssl = false;
             singleBinary = "symlinks";
-          }).overrideAttrs (_: {
+          }).overrideAttrs (old: {
+            # Teach the multicall binary unpins' uniform `--unpin-program=NAME`
+            # selector (a synonym of coreutils' own `--coreutils-prog=`), so
+            # every catalog multicall is driven the same way. See
+            # docs/multicall.md. The cosmo/Windows build applies the same patch
+            # in ./cosmo.nix.
+            patches = (old.patches or [ ]) ++ [ ./coreutils-unpin-program.patch ];
+
             # Run coreutils' own functional suite (tests/) on native Linux:
             # 434 pass / 0 fail under pkgsStatic-musl (verified locally). The
             # top-level `make check` ALSO recurses into gnulib-tests/, whose

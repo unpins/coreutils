@@ -1,0 +1,26 @@
+Add `--unpin-program=NAME` as a synonym for coreutils' own
+`--coreutils-prog=NAME` multicall selector, so the unpins catalog drives every
+multicall binary the same way (see docs/multicall.md). The alias path is
+unaffected: launch_program() already dispatches on argv[0] and exit()s before
+this code runs, so an alias symlink (ls, cat, …) stays locked to its argv[0]
+identity and ignores the flag.
+
+Applied on every coreutils build (native pkgsStatic + cosmo/Windows).
+
+--- a/src/coreutils.c
++++ b/src/coreutils.c
+@@ -160,6 +160,14 @@
+           nskip = 1;
+           arg_name = prog_name = argv[1] + strlen ("--coreutils-prog=");
+         }
++      else if (STRPREFIX (argv[1], "--unpin-program="))
++        {
++          /* unpins' uniform multicall selector -- a synonym of
++             --coreutils-prog= so every catalog multicall is driven the same
++             way (see docs/multicall.md).  */
++          nskip = 1;
++          arg_name = prog_name = argv[1] + strlen ("--unpin-program=");
++        }
+       else if (STRPREFIX (argv[1], "--coreutils-prog-shebang="))
+         {
+           nskip = 2;

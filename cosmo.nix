@@ -52,7 +52,12 @@ let
     withOpenssl = false;
     singleBinary = "symlinks";
   }).overrideAttrs (oa: {
-    patches = (oa.patches or [ ]) ++ [ ./coreutils-cosmo.patch ];
+    patches = (oa.patches or [ ]) ++ [
+      ./coreutils-cosmo.patch
+      # Uniform `--unpin-program=NAME` multicall selector (synonym of
+      # `--coreutils-prog=`); also applied on the native build in flake.nix.
+      ./coreutils-unpin-program.patch
+    ];
 
     # cosmocc's libc claims several short identifiers that clash with
     # coreutils helpers — different signatures, so the compiler can't
