@@ -157,3 +157,31 @@ diff -urN a/src/factor.c b/src/factor.c
  
  /* Structure and routines for buffering and outputting full lines, to
     support parallel operation efficiently.
+--- a/src/coreutils.c
++++ b/src/coreutils.c
+@@ -130,6 +130,25 @@
+ main (int argc, char **argv)
+ {
+   char *prog_name = last_component (argv[0]);
++#ifdef __COSMOCC__
++  /* Windows: an alias hardlink invokes the multicall under an applet name with
++     a ".exe" suffix ("ls.exe"), and cosmo's APE argv[0] can carry a "\\" path
++     separator that gnulib's last_component (which splits only on "/") won't
++     strip.  Normalize prog_name so the argv[0] applet dispatch below matches
++     the bare applet name ("ls").  The shared catalog dispatchers
++     (lib.multicallDispatcherC) do the same; coreutils keeps GNU's own argv[0]
++     dispatch, so it needs this here.  The in-place NUL is safe: it mutates our
++     own argv copy.  */
++  {
++    char *cosmo_bs = strrchr (prog_name, '\\');
++    if (cosmo_bs)
++      prog_name = cosmo_bs + 1;
++    size_t cosmo_pnl = strlen (prog_name);
++    if (cosmo_pnl > 4 && (streq (prog_name + cosmo_pnl - 4, ".exe")
++                          || streq (prog_name + cosmo_pnl - 4, ".com")))
++      prog_name[cosmo_pnl - 4] = '\0';
++  }
++#endif
+   int optc;
+ 
+   /* Map external name to internal name.  */
