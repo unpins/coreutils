@@ -23,10 +23,47 @@
   # names from the upstream symlinks before wiping them — single source
   # of truth, no hand-maintained list.
   outputs = { self, unpins-lib }:
+    let
+      # Applet names from upstream's single-binary symlink set, single source
+      # of truth for BOTH multicall modules below. Cosmo compiles all of these;
+      # native (musl) additionally builds `hostid` (gethostid), which cosmocc
+      # lacks — so the linux list appends it and the cosmo list does not.
+      applets = [
+        "[" "b2sum" "base32" "base64" "basename" "basenc" "cat" "chcon"
+        "chgrp" "chmod" "chown" "chroot" "cksum" "comm" "cp" "csplit" "cut"
+        "date" "dd" "df" "dir" "dircolors" "dirname" "du" "echo" "env"
+        "expand" "expr" "factor" "false" "fmt" "fold" "groups" "head"
+        "id" "install" "join" "kill" "link" "ln" "logname" "ls"
+        "md5sum" "mkdir" "mkfifo" "mknod" "mktemp" "mv" "nice" "nl" "nohup"
+        "nproc" "numfmt" "od" "paste" "pathchk" "pinky" "pr" "printenv"
+        "printf" "ptx" "pwd" "readlink" "realpath" "rm" "rmdir" "runcon"
+        "seq" "sha1sum" "sha224sum" "sha256sum" "sha384sum" "sha512sum"
+        "shred" "shuf" "sleep" "sort" "split" "stat" "stty" "sum" "sync"
+        "tac" "tail" "tee" "test" "timeout" "touch" "tr" "true" "truncate"
+        "tsort" "tty" "uname" "unexpand" "uniq" "unlink" "uptime" "users"
+        "vdir" "wc" "who" "whoami" "yes"
+      ];
+    in
     unpins-lib.lib.mkStandaloneFlake {
       inherit self;
       name = "coreutils";
       windowsBuild = import ./cosmo.nix { inherit unpins-lib; };
+
+      # Cosmo (APE/Windows) multicall MODULE for the `unpinbox` mega-binary —
+      # symmetric to `multicall` (Linux bitcode) below but emitted from the
+      # cosmo cross build (windowsBuild above, reused untouched). The catalog
+      # `unpinbox/flake.nix` reads it from
+      # `coreutils.packages.<sys>.windows-x86_64.cosmoMulticallModule` and feeds
+      # it to `lib.mkMegaMulticall`. Same self-dispatch shape as the linux block:
+      # ONE `coreutils` program + every applet as an alias. depArchives off
+      # (cosmo build disables acl/attr). See nix-lib `multicallCosmo` arg.
+      multicallCosmo = {
+        program = "coreutils";
+        programObjs = [ "src/coreutils-coreutils.o" ];
+        appletArchives = [ "src/libsinglebin_*.a" "src/libcksum_*.a" "src/libwc_*.a" "src/libver.a" ];
+        gnulibArchives = [ "lib/libcoreutils.a" ];
+        aliases = applets;
+      };
       # coreutils dispatches its applet from argv[0]. The Windows smoke
       # decompresses the release artifact to `smoke.exe` and runs it, so
       # argv[0] is "smoke" — a bare `smoke.exe --version` errors with
@@ -39,6 +76,20 @@
       # smoke.exe (both verified locally).
       smoke = [ "--unpin-program=env" "--version" ];
       smokePattern = "GNU coreutils";
+
+      # Self-dispatch: --enable-single-binary folds every applet into one
+      # `coreutils` that dispatches by argv[0], so the module is ONE program
+      # with every applet as an alias. Objects, internal archives and the
+      # acl/attr deps are all inferred from the build. Linux only.
+      engine = "unpin-llvm";
+      multicall = {
+        inferLinkInputs = true;
+        programs = [{
+          name = "coreutils";
+          aliases = applets ++ [ "hostid" ];
+        }];
+      };
+
       build = pkgs:
         let sp = pkgs.pkgsStatic; in
         unpins-lib.lib.withAliases pkgs
