@@ -84,6 +84,9 @@
       engine = "unpin-llvm";
       multicall = {
         inferLinkInputs = true;
+        # Fold into the darwin (Mach-O) mega via the engine, same as grep/bc.
+        # (Windows/APE goes through Cosmopolitan — see multicallCosmo above.)
+        darwin = true;
         programs = [{
           name = "coreutils";
           aliases = applets ++ [ "hostid" ];
