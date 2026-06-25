@@ -53,7 +53,6 @@
 
       engine = "unpin-llvm";
       multicall = {
-        inferLinkInputs = true;
         programs = [{
           name = "coreutils";
           aliases = applets ++ [ "hostid" ];
