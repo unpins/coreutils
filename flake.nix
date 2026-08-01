@@ -61,45 +61,40 @@
 
       build = pkgs:
         let sp = pkgs.pkgsStatic; in
-        unpins-lib.lib.withAliases pkgs
-          {
-            primary = "coreutils";
-            aliasesFromSymlinksIn = "bin";
-          }
-          # No functionality is dropped, only redundant deps:
-          #   acl/attr: off on darwin (nixpkgs acl/attr are Linux-only) but
-          #     configure still auto-detects native ACL/xattr from libSystem.
-          #   gmp: factor/expr fall back to gnulib's mini-gmp (also dodges a
-          #     flaky gmp tests/mpq under musl pkgsStatic).
-          #   openssl: md5sum/sha*sum keep gnulib impls — smaller closure.
-          ((sp.coreutils.override {
-            # minimal=false keeps $out/share/man (minimal=true rm's it), so
-            # `unpin man coreutils <applet>` works. withOpenssl stays off below
-            # so this doesn't default openssl on.
-            minimal = false;
-            aclSupport = pkgs.stdenv.hostPlatform.isLinux;
-            attrSupport = pkgs.stdenv.hostPlatform.isLinux;
-            selinuxSupport = false;
-            gmpSupport = false;
-            withOpenssl = false;
-            singleBinary = "symlinks";
-          }).overrideAttrs (old: {
-            # Add unpins' uniform `--unpin-program=NAME` selector (a synonym of
-            # coreutils' own `--coreutils-prog=`). See docs/multicall.md.
-            patches = (old.patches or [ ]) ++ [ ./coreutils-unpin-program.patch ];
+        # No functionality is dropped, only redundant deps:
+        #   acl/attr: off on darwin (nixpkgs acl/attr are Linux-only) but
+        #     configure still auto-detects native ACL/xattr from libSystem.
+        #   gmp: factor/expr fall back to gnulib's mini-gmp (also dodges a
+        #     flaky gmp tests/mpq under musl pkgsStatic).
+        #   openssl: md5sum/sha*sum keep gnulib impls — smaller closure.
+        (sp.coreutils.override {
+          # minimal=false keeps $out/share/man (minimal=true rm's it), so
+          # `unpin man coreutils <applet>` works. withOpenssl stays off below
+          # so this doesn't default openssl on.
+          minimal = false;
+          aclSupport = pkgs.stdenv.hostPlatform.isLinux;
+          attrSupport = pkgs.stdenv.hostPlatform.isLinux;
+          selinuxSupport = false;
+          gmpSupport = false;
+          withOpenssl = false;
+          singleBinary = "symlinks";
+        }).overrideAttrs (old: {
+          # Add unpins' uniform `--unpin-program=NAME` selector (a synonym of
+          # coreutils' own `--coreutils-prog=`). See docs/multicall.md.
+          patches = (old.patches or [ ]) ++ [ ./coreutils-unpin-program.patch ];
 
-            # Restrict to tests/ (coreutils' own suite): the top-level check
-            # also recurses into gnulib-tests/, whose threading/locale/TLS units
-            # assume glibc and fail under musl. Cross skips via canExecute;
-            # darwin-native off (not locally verifiable yet).
-            doCheck = sp.stdenv.hostPlatform.isLinux
-              && sp.stdenv.buildPlatform.canExecute sp.stdenv.hostPlatform;
-            checkTarget = "check";
-            checkPhase = ''
-              runHook preCheck
-              make -C tests check VERBOSE=yes
-              runHook postCheck
-            '';
-          }));
+          # Restrict to tests/ (coreutils' own suite): the top-level check
+          # also recurses into gnulib-tests/, whose threading/locale/TLS units
+          # assume glibc and fail under musl. Cross skips via canExecute;
+          # darwin-native off (not locally verifiable yet).
+          doCheck = sp.stdenv.hostPlatform.isLinux
+            && sp.stdenv.buildPlatform.canExecute sp.stdenv.hostPlatform;
+          checkTarget = "check";
+          checkPhase = ''
+            runHook preCheck
+            make -C tests check VERBOSE=yes
+            runHook postCheck
+          '';
+        });
     };
 }
