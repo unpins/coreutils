@@ -112,17 +112,8 @@ let
   });
 
   # ELF → PE32+ rename to `coreutils.exe` happens automatically via the
-  # cosmo cross stdenv's apelink setup hook (preFixupHook). It also
-  # rewires the multicall symlinks (`ls -> coreutils` etc.) into
-  # `<applet>.exe -> coreutils.exe` form during Phase 2 of the hook —
-  # so `aliasesFromSymlinksIn = "bin"` still sees a non-empty symlink
-  # set at withAliases harvest time (which runs in postInstall, before
-  # the hook). withAliases's UNPIN_META embed runs in postFixup, after
-  # the hook, and operates on the final `coreutils.exe`.
+  # cosmo cross stdenv's apelink setup hook (preFixupHook). The applet list
+  # the .exe announces comes from `multicallCosmo.aliases`, which is the same
+  # `applets` the fold dispatches — not harvested from these symlinks.
 in
-unpins-lib.lib.withAliases cosmoPkgs
-  {
-    primary = "coreutils.exe";
-    aliasesFromSymlinksIn = "bin";
-  }
-  patched
+patched
