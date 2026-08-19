@@ -57,6 +57,12 @@
           name = "coreutils";
           aliases = applets ++ [ "hostid" ];
         }];
+        # `stdbuf` bakes the base's `libexec/coreutils/libstdbuf.so` path into
+        # the binary. It is dead here twice over: stdbuf is not among the
+        # shipped applets, and a static binary cannot LD_PRELOAD a .so anyway.
+        # Nix still counts it as a runtime ref, which drags the whole base
+        # build (and its toolchain) behind a self-contained binary.
+        removeReferences = [ "coreutils-full" ];
       };
 
       build = pkgs:
