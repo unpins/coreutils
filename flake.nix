@@ -55,7 +55,11 @@
       multicall = {
         programs = [{
           name = "coreutils";
-          aliases = applets ++ [ "hostid" ];
+          # `[` is the one applet coreutils documents only under its other
+          # name: 9.11 installs 106 pages including test.1 and no `[.1`.
+          # Mapped in place so the announced ORDER is untouched.
+          aliases = (map (a: if a == "[" then { name = a; noMan = true; } else a) applets)
+            ++ [ "hostid" ];
         }];
         # `stdbuf` bakes the base's `libexec/coreutils/libstdbuf.so` path into
         # the binary. It is dead here twice over: stdbuf is not among the
