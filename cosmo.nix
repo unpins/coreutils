@@ -39,6 +39,15 @@
 #   - gmpSupport:               we'd have to cosmo-build gmp; skip it and
 #                               lose only `factor` / `numfmt` arb-precision
 #   - withOpenssl:              md5/sha* fall back to gnulib's own
+#
+# minimal = false is the one thing we turn ON, for the same reason the native
+# build does: minimal (the nixpkgs default) ends its postInstall with
+# `rm -r "$out/share"`, which takes the man pages with it, and unpinEmbedWrap
+# then finds no `share/man` to embed — `unpin man coreutils <applet>` dead on
+# Windows while Linux had all 106. help2man cannot run a cross-built binary, so
+# nixpkgs itself grafts `buildPackages.coreutils-full`'s pages in on the cross
+# path; we only have to ask for them. withOpenssl stays pinned false below,
+# since it defaults to `!minimal`.
 { unpins-lib }:
 pkgs:
 let
@@ -50,6 +59,7 @@ let
     selinuxSupport = false;
     gmpSupport = false;
     withOpenssl = false;
+    minimal = false;
     singleBinary = "symlinks";
   }).overrideAttrs (oa: {
     patches = (oa.patches or [ ]) ++ [
