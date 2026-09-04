@@ -5,11 +5,17 @@ unaffected: launch_program() already dispatches on argv[0] and exit()s before
 this code runs, so an alias symlink (ls, cat, …) stays locked to its argv[0]
 identity and ignores the flag.
 
+`install` needs the external→internal name mapping repeated here: the applet is
+announced (and shimmed) as `install` while the dispatch table keys it
+`ginstall`, and main() applies that mapping to argv[0] only — which is why
+upstream's own `--coreutils-prog=install` reports "unknown program" too.
+Without it one announced name is unreachable through the uniform selector.
+
 Applied on every coreutils build (native pkgsStatic + cosmo/Windows).
 
 --- a/src/coreutils.c
 +++ b/src/coreutils.c
-@@ -160,6 +160,14 @@
+@@ -160,6 +160,19 @@
            nskip = 1;
            arg_name = prog_name = argv[1] + strlen ("--coreutils-prog=");
          }
@@ -20,6 +26,11 @@ Applied on every coreutils build (native pkgsStatic + cosmo/Windows).
 +             way (see docs/multicall.md).  */
 +          nskip = 1;
 +          arg_name = prog_name = argv[1] + strlen ("--unpin-program=");
++          /* The announced applet is `install`, the table key `ginstall`;
++             main() maps that for argv[0] only.  arg_name keeps the external
++             name, so the program still reports itself as `install`.  */
++          if (streq (prog_name, "install"))
++            prog_name = ginstall;
 +        }
        else if (STRPREFIX (argv[1], "--coreutils-prog-shebang="))
          {
