@@ -1,10 +1,10 @@
 # coreutils via cosmoStaticCross for Windows-x86_64.
 #
-# Tracks nixpkgs's pinned coreutils version (currently 9.8) so all three
-# unpins targets — Linux / macOS / Windows — ship the same source. The
-# 9.4 pin documented in earlier revisions was needed because that
-# gnulib's `getlocalename_l-unsafe.c` hard-errored on cosmo; the 9.8
-# vendored gnulib no longer trips that, so the pin is gone.
+# Tracks nixpkgs's pinned coreutils version, so all three unpins targets —
+# Linux / macOS / Windows — ship the same source. The 9.4 pin documented in
+# earlier revisions was needed because that gnulib's
+# `getlocalename_l-unsafe.c` hard-errored on cosmo; later vendored gnulib no
+# longer trips that, so the pin is gone.
 #
 # What the patch (`coreutils-cosmo.patch`) fixes:
 #

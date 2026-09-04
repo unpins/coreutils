@@ -1,6 +1,6 @@
 # coreutils
 
-[GNU coreutils](https://www.gnu.org/software/coreutils/) — `ls`, `cat`, `cp`, `mv`, `rm` and ~100 other core file, text and shell programs, packaged as a single self-contained binary built natively for Linux, macOS, and Windows.
+[GNU coreutils](https://www.gnu.org/software/coreutils/) — `ls`, `cat`, `cp`, `mv`, `rm` and ~100 other core file, text and shell programs. A single self-contained binary, built natively for Linux, macOS, and Windows.
 
 [![CI](https://github.com/unpins/coreutils/actions/workflows/coreutils.yml/badge.svg)](https://github.com/unpins/coreutils/actions)
 ![Linux](https://img.shields.io/badge/Linux-✓-success?logo=linux&logoColor=white)
@@ -11,7 +11,14 @@ Part of the [unpins](https://unpins.org) catalog; install it with [`unpin`](http
 
 ## Usage
 
-coreutils is one binary holding ~100 programs. It picks which one to run from the name it's invoked as, so the natural way to use it is to install the programs onto your PATH:
+Run a program with [unpin](https://github.com/unpins/unpin):
+
+```bash
+unpin coreutils --unpin-program=ls -la /
+unpin coreutils --unpin-program=sha256sum file
+```
+
+To install the programs onto your PATH:
 
 ```bash
 unpin install coreutils
@@ -19,25 +26,23 @@ ls -la /
 sha256sum file
 ```
 
-To run a program without installing, name it with `--coreutils-prog=`:
+`unpin install coreutils` creates all ~105 programs as commands — `ls`, `cat`, `cp`, `mv`, `rm`, `sort`, `sha256sum`, … (full list: `unpin info coreutils`).
 
-```bash
-unpin coreutils --coreutils-prog=ls -la /
-```
+## Man pages
 
-`unpin coreutils --help` lists every built-in program.
+One page per program is embedded — read any with `unpin man coreutils <program>`, e.g. `unpin man coreutils ls`.
 
 ## Build locally
 
 ```bash
 nix build github:unpins/coreutils
-./result/bin/coreutils --coreutils-prog=ls /
+./result/bin/coreutils --unpin-program=ls /
 ```
 
 Or run directly:
 
 ```bash
-nix run github:unpins/coreutils -- --coreutils-prog=ls /
+nix run github:unpins/coreutils -- --unpin-program=ls /
 ```
 
 The first invocation will offer to add the [unpins.cachix.org](https://unpins.cachix.org) substituter so most pulls come pre-built.
@@ -48,7 +53,6 @@ The [Releases](https://github.com/unpins/coreutils/releases) page has standalone
 
 ## Build notes
 
-- **Windows** is built with [Cosmopolitan](https://justine.lol/cosmopolitan/); Linux and macOS use static builds. All three ship the same multicall binary from the same source.
-- **Disabled:** SELinux contexts (`-Z`, `runcon`), libgmp (mini-gmp fallback for `factor`/`expr`), and OpenSSL checksum acceleration. ACL and xattr preservation are on for Linux/macOS, off on Windows.
-- **Man pages:** one page per applet is embedded (`ls.1`, `cat.1`, … — ~105 in all, plus the overview `coreutils.1`). Read any with `unpin man coreutils <applet>`, e.g. `unpin man coreutils ls`.
+- **Windows** uses [Cosmopolitan](https://justine.lol/cosmopolitan/), not mingw: the vendored gnulib assumes `fork`/`waitpid` (`lib/savewd.c`), which mingw does not provide.
+- **Disabled:** SELinux contexts (`-Z`, `chcon`, `runcon`), libgmp (mini-gmp fallback for `factor`/`expr`), and OpenSSL checksum acceleration. ACL and xattr preservation are on for Linux/macOS, off on Windows.
 - **Tests:** the functional suite (coreutils' own `tests/`) runs on native builds and passes under static-musl (0 failures); it auto-skips on cross targets the build host can't execute. The `gnulib-tests` portability units (threading/locale/TLS) are excluded — they assume glibc semantics, not musl.
