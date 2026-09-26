@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [9.11-2] - 2026-09-26
+
 ### Fixed
 
 - `--unpin-program=install` now runs `install`. It reported "unknown program"
