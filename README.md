@@ -54,5 +54,5 @@ The [Releases](https://github.com/unpins/coreutils/releases) page has standalone
 ## Build notes
 
 - **Windows** uses [Cosmopolitan](https://justine.lol/cosmopolitan/), not mingw: the vendored gnulib assumes `fork`/`waitpid` (`lib/savewd.c`), which mingw does not provide.
-- **Disabled:** SELinux contexts (`-Z`, `chcon`, `runcon`), libgmp (mini-gmp fallback for `factor`/`expr`), and OpenSSL checksum acceleration. ACL and xattr preservation are on for Linux/macOS, off on Windows.
+- **Disabled:** SELinux contexts, as in nixpkgs' own coreutils: `chcon` and `runcon` are there but report "Not supported", and `-Z` shows no context. Also off: libgmp (mini-gmp fallback for `factor`/`expr`), and OpenSSL checksum acceleration. ACL and xattr preservation are on for Linux/macOS, off on Windows.
 - **Tests:** the functional suite (coreutils' own `tests/`) runs on native builds and passes under static-musl (0 failures); it auto-skips on cross targets the build host can't execute. The `gnulib-tests` portability units (threading/locale/TLS) are excluded — they assume glibc semantics, not musl.

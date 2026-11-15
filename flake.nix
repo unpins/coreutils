@@ -71,7 +71,8 @@
 
       build = pkgs:
         let sp = pkgs.pkgsStatic; in
-        # No functionality is dropped, only redundant deps:
+        #   selinux: off, as nixpkgs' own default (`selinuxSupport ? false`);
+        #     chcon/runcon are still built and fail with "Not supported".
         #   acl/attr: off on darwin (nixpkgs acl/attr are Linux-only) but
         #     configure still auto-detects native ACL/xattr from libSystem.
         #   gmp: factor/expr fall back to gnulib's mini-gmp (also dodges a
