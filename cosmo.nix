@@ -16,11 +16,13 @@
 #   bracketed in `#if 0`; FACTOR_PIPE_BUF hard-coded to 4096 because
 #   `static char lbuf_buf[2*FACTOR_PIPE_BUF]` at file scope requires
 #   a compile-time constant.
-# - lib/canonicalize.c — drop a `FALLTHROUGH;` after a `break`; the
-#   cosmocc compiler diagnoses unreachable fall-through.
+# - lib/canonicalize.c — drop a `FALLTHROUGH;` after a conditional
+#   `break`.
 # - lib/getlocalename_l-unsafe.c — gnulib has a `#error "Please port
 #   to your platform!"` for unknown systems. Add a `__COSMOCC__` branch
 #   that returns "C" (cosmo's locale story is minimal anyway).
+# - src/coreutils.c — strip a `\`-separated directory and a `.exe`/`.com`
+#   suffix from argv[0], so an alias such as `ls.exe` dispatches to `ls`.
 #
 # Configure overrides:
 #   - ac_cv_header_error_h=no:    cosmocc has no <error.h>; without
@@ -36,15 +38,14 @@
 # Why we disable so much via .override:
 #   - aclSupport / attrSupport: cosmo has no <sys/acl.h> / <sys/xattr.h>
 #   - selinuxSupport:           libselinux is Linux-only
-#   - gmpSupport:               we'd have to cosmo-build gmp; skip it and
-#                               lose only `factor` / `numfmt` arb-precision
+#   - gmpSupport:               factor/expr use the bundled mini-gmp
 #   - withOpenssl:              md5/sha* fall back to gnulib's own
 #
 # minimal = false is the one thing we turn ON, for the same reason the native
 # build does: minimal (the nixpkgs default) ends its postInstall with
 # `rm -r "$out/share"`, which takes the man pages with it, and unpinEmbedWrap
 # then finds no `share/man` to embed — `unpin man coreutils <applet>` dead on
-# Windows while Linux had all 106. help2man cannot run a cross-built binary, so
+# Windows while Linux had them all. help2man cannot run a cross-built binary, so
 # nixpkgs itself grafts `buildPackages.coreutils-full`'s pages in on the cross
 # path; we only have to ask for them. withOpenssl stays pinned false below,
 # since it defaults to `!minimal`.
@@ -67,37 +68,23 @@ let
       # Uniform `--unpin-program=NAME` multicall selector (synonym of
       # `--coreutils-prog=`); also applied on the native build in flake.nix.
       ./coreutils-unpin-program.patch
+      # cosmocc's libc claims several short identifiers that clash with
+      # coreutils helpers — different signatures, so the compiler can't
+      # accept both declarations. This renames the coreutils side, call
+      # sites included:
+      #
+      #   fadvise        cosmocc: int(int, u64, u64, int) in <libc/calls/calls.h>
+      #                  coreutils: void(FILE*, fadvice_t) in lib/fadvise.h
+      #   touch          cosmocc: in <libc/calls/calls.h>
+      #                  coreutils: static bool(const char*) in src/touch.c
+      #   timespec_cmp   cosmocc: in <libc/calls/struct/timespec.h>
+      #                  coreutils: in lib/timespec.h + 4 callers
+      #   issymlink      cosmocc: `#define issymlink __issymlink` macro
+      #                  coreutils: gnulib header-inline in lib/issymlink.{h,c}
+      #                  → without rename, our inline emits as `__issymlink`
+      #                    in every TU and the linker rejects multi-def.
+      ./coreutils-cosmo-rename.patch
     ];
-
-    # cosmocc's libc claims several short identifiers that clash with
-    # coreutils helpers — different signatures, so the compiler can't
-    # accept both declarations. We rename the coreutils side. The regex
-    # anchors on `(` so `#include "fadvise.h"` etc. survive untouched.
-    # Done as sed (not patch) because it's a global symbol rename across
-    # many files; the version-pinned source patch stays focused on the
-    # enum→#define transforms.
-    #
-    #   fadvise        cosmocc: int(int, u64, u64, int) in <libc/calls/calls.h>
-    #                  coreutils: void(FILE*, fadvice_t) in lib/fadvise.h
-    #   touch          cosmocc: in <libc/calls/calls.h>
-    #                  coreutils: static bool(const char*) in src/touch.c
-    #   timespec_cmp   cosmocc: in <libc/calls/struct/timespec.h>
-    #                  coreutils: in lib/timespec.h + 4 callers
-    #   issymlink      cosmocc: `#define issymlink __issymlink` macro
-    #                  coreutils: gnulib header-inline in lib/issymlink.{h,c}
-    #                  → without rename, our inline emits as `__issymlink`
-    #                    in every TU and the linker rejects multi-def.
-    postPatch = (oa.postPatch or "") + ''
-      rename_call_sites() {
-          local sym="$1" newsym="$2"; shift 2
-          local files=$(grep -lE "\b$sym[[:space:]]*\(" "$@" 2>/dev/null)
-          [ -n "$files" ] && sed -i -E "s/\b$sym([[:space:]]*\()/$newsym\1/g" $files
-      }
-      rename_call_sites fadvise      cu_fadvise      lib/fadvise.h lib/fadvise.c src/*.c
-      rename_call_sites touch        cu_touch        src/touch.c
-      rename_call_sites timespec_cmp cu_timespec_cmp lib/timespec.h lib/*.c src/*.c
-      rename_call_sites issymlink    cu_issymlink    lib/issymlink.h lib/*.c src/*.c
-    '';
 
     configureFlags = (oa.configureFlags or [ ]) ++ [
       "ac_cv_header_error_h=no"

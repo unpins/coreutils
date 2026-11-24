@@ -14,7 +14,7 @@
     let
       # Applet names harvested from upstream's single-binary symlinks, single
       # source of truth for both multicall modules below. Cosmo lacks gethostid,
-      # so `hostid` is appended to the linux list only (see darwin/cosmo below).
+      # so `hostid` is appended to the native (Linux/macOS) list only.
       applets = [
         "[" "b2sum" "base32" "base64" "basename" "basenc" "cat" "chcon"
         "chgrp" "chmod" "chown" "chroot" "cksum" "comm" "cp" "csplit" "cut"
