@@ -56,17 +56,11 @@
         programs = [{
           name = "coreutils";
           # `[` is the one applet coreutils documents only under its other
-          # name: 9.11 installs 106 pages including test.1 and no `[.1`.
+          # name: 9.11 installs test.1 and no `[.1`.
           # Mapped in place so the announced ORDER is untouched.
           aliases = (map (a: if a == "[" then { name = a; noMan = true; } else a) applets)
             ++ [ "hostid" ];
         }];
-        # `stdbuf` bakes the base's `libexec/coreutils/libstdbuf.so` path into
-        # the binary. It is dead here twice over: stdbuf is not among the
-        # shipped applets, and a static binary cannot LD_PRELOAD a .so anyway.
-        # Nix still counts it as a runtime ref, which drags the whole base
-        # build (and its toolchain) behind a self-contained binary.
-        removeReferences = [ "coreutils-full" ];
       };
 
       build = pkgs:
@@ -94,18 +88,21 @@
           # coreutils' own `--coreutils-prog=`). See docs/multicall.md.
           patches = (old.patches or [ ]) ++ [ ./coreutils-unpin-program.patch ];
 
-          # Restrict to tests/ (coreutils' own suite): the top-level check
-          # also recurses into gnulib-tests/, whose threading/locale/TLS units
-          # assume glibc and fail under musl. Cross skips via canExecute;
-          # darwin-native off (not locally verifiable yet).
-          doCheck = sp.stdenv.hostPlatform.isLinux
-            && sp.stdenv.buildPlatform.canExecute sp.stdenv.hostPlatform;
-          checkTarget = "check";
-          checkPhase = ''
-            runHook preCheck
-            make -C tests check VERBOSE=yes
-            runHook postCheck
+          # stdbuf works by LD_PRELOADing libstdbuf.so, which a static binary
+          # cannot do; nixpkgs leaves it out of static builds, but configure's
+          # link probe still accepts it under the engine.
+          # gl_cv_have_weak: gnulib otherwise asks a weak pthread symbol whether
+          # threads are in use; a static link never pulls it in, so its locks
+          # become no-ops and its thread tests fail.
+          configureFlags = (old.configureFlags or [ ]) ++ [
+            "utils_cv_stdbuf_supported=no"
+            "gl_cv_have_weak=no"
+          ];
+          postInstall = (old.postInstall or "") + ''
+            rm -f $out/share/man/man1/stdbuf.1*
           '';
+
+          doCheck = sp.stdenv.buildPlatform.canExecute sp.stdenv.hostPlatform;
         });
     };
 }

@@ -94,7 +94,16 @@ let
       "--disable-rpath"
       "--disable-acl"
       "--disable-assert"
+      # As on the native build: stdbuf needs LD_PRELOAD, and gnulib's weak
+      # pthread probe would turn its locks into no-ops in a static binary.
+      "utils_cv_stdbuf_supported=no"
+      "gl_cv_have_weak=no"
     ];
+
+    # The man pages come from the build platform's coreutils, which has stdbuf.
+    postInstall = (oa.postInstall or "") + ''
+      rm -f $out/share/man/man1/stdbuf.1*
+    '';
 
     env = (oa.env or { }) // {
       NIX_CFLAGS_COMPILE = builtins.concatStringsSep " " [

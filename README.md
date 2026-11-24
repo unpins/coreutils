@@ -55,4 +55,5 @@ The [Releases](https://github.com/unpins/coreutils/releases) page has standalone
 
 - **Windows** uses [Cosmopolitan](https://justine.lol/cosmopolitan/), not mingw: the vendored gnulib assumes `fork`/`waitpid` (`lib/savewd.c`), which mingw does not provide.
 - **Disabled:** SELinux contexts, as in nixpkgs' own coreutils: `chcon` and `runcon` are there but report "Not supported", and `-Z` shows no context. Also off: libgmp (mini-gmp fallback for `factor`/`expr`), and OpenSSL checksum acceleration. ACL and xattr preservation are on for Linux/macOS, off on Windows.
-- **Tests:** the functional suite (coreutils' own `tests/`) runs on native builds and passes under static-musl (0 failures); it auto-skips on cross targets the build host can't execute. The `gnulib-tests` portability units (threading/locale/TLS) are excluded — they assume glibc semantics, not musl.
+- **Not included:** `stdbuf`, which works by loading a separate library into the program it runs, something a single self-contained binary cannot ship. On Windows, `hostid` is also missing, since Cosmopolitan has no `gethostid`.
+- **Tests:** coreutils' full test suite, gnulib's portability tests included, runs on the native Linux and macOS builds and passes with no failures. The Windows build and the other Linux architectures are built on a machine that cannot run them, so the suite is skipped there.

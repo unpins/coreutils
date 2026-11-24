@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The `stdbuf` man page was embedded, and `--unpin-program=stdbuf` was
+  accepted, although `stdbuf` cannot work in a self-contained binary: it works
+  by loading a separate library into the program it runs. Both are gone.
+
 ## [9.11-2] - 2026-09-26
 
 ### Fixed
